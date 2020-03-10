@@ -1,45 +1,48 @@
-    j := "delete"
-  , u := "insert"
-  , i := "home"
-  , k := "end"
-  , o := "pgup"
-  , l := "pgdn"
+lctrl & ralt:: 
+  isAltGrDown := true
+  if (!j) {
 
-  , å := "backspace"
-  , ö := "enter"
+      j := "delete"
+    , u := "insert"
+    , i := "home"
+    , k := "end"
+    , o := "pgup"
+    , l := "pgdn"
 
-  , s := "down"
-  , w := "up"
-  , a := "left"
-  , d := "right"
+    , Ã¥ := "backspace"
+    , Ã¶ := "enter"
 
-  , c := "c"
-  , v := "v"
-  , x := "x"
-  , z := "z"
-  , y := "y"
+    , s := "down"
+    , w := "up"
+    , a := "left"
+    , d := "right"
 
-  , comment := "'"
-  , tab := "tab"
-  , space := "space"
+    , c := "c"
+    , v := "v"
+    , x := "x"
+    , z := "z"
+    , y := "y"
 
+    , comment := "'"
+    , tab := "tab"
+    , space := "space"
+  }
 return
 
-lctrl & ralt:: isAltGrDown := true
 lctrl & ralt up:: isAltGrDown := false
 
 #if isAltGrDown
 
 *':: sendHotkey("comment")
-
+lalt::return
 *j::
 *u::
 *i::
 *k::
 *o::
 *l::
-*ö::
-*å::
+*Ã¶::
+*Ã¥::
 *s::
 *w::
 *a::
@@ -60,27 +63,30 @@ return
 9::]
 +::\
 2::@
-3::£
+3::Â£
 4::$
-e::€
+e::â‚¬
 <::|
-¨::~
-
+Â¨::~
 
 #if
 
 sendHotkey(hotkeyVar) {
-  sendCompatibleHotkey := strlen(%hotkeyVar%) > 1 
-    ? "{" %hotkeyVar% "}"
-    : %hotkeyVar%
+  local sendCompatibleHotkey, fullHotkeyCombination
+
+  if (strlen(%hotkeyVar%) > 1) {
+    sendCompatibleHotkey := "{" %hotkeyVar% "}"
+  } else {
+    sendCompatibleHotkey := %hotkeyVar%
+  }
 
   fullHotkeyCombination := ""
     . putCtrlIfReplacementDown()
     . putAltIfReplacementDown()
     . putShiftIfDown()
     . sendCompatibleHotkey
-  ; tooltip % fullHotkeyCombination
-  send % fullHotkeyCombination  
+  
+  send % fullHotkeyCombination
 }
 
 putShiftIfDown() {
@@ -88,7 +94,7 @@ putShiftIfDown() {
 }
 
 putCtrlIfReplacementDown() {
-  return getkeystate("lalt") ? "^" : ""
+  return getkeystate("lalt", "P") ? "^" : ""
 }
 
 putAltIfReplacementDown() {
