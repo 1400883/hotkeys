@@ -1,3 +1,5 @@
+#maxthreadsperhotkey, 2
+
 lctrl & ralt:: 
   isAltGrDown := true
   if (!j) {
@@ -33,8 +35,8 @@ lctrl & ralt up:: isAltGrDown := false
 
 #if isAltGrDown
 
-*':: sendHotkey("comment")
 lalt::return
+*':: sendHotkey("comment")
 *j::
 *u::
 *i::
@@ -54,6 +56,7 @@ lalt::return
 *y::
 *tab::
 *space::
+  uniqueHotkeyId := substr(a_thishotkey, 2) a_now
   sendHotkey(substr(a_thishotkey, 2))
 return
 
@@ -67,13 +70,17 @@ return
 4::$
 e::€
 <::|
-¨::~
+*¨:: send, {lctrl down}{ralt down}¨{ralt up}{lctrl up}
 
+#maxthreadsperhotkey, 1
 #if
 
 sendHotkey(hotkeyVar) {
   local sendCompatibleHotkey, fullHotkeyCombination
 
+  static isFunctionRunning = false, isHotkeySendInitiated = false
+
+  isHotkeySendInitiated := true
   if (strlen(%hotkeyVar%) > 1) {
     sendCompatibleHotkey := "{" %hotkeyVar% "}"
   } else {
@@ -86,7 +93,36 @@ sendHotkey(hotkeyVar) {
     . putShiftIfDown()
     . sendCompatibleHotkey
   
+  isHotkeySendInitiated := false
   send % fullHotkeyCombination
+  
+  if (!isFunctionRunning)
+  {
+    isFunctionRunning := true
+    
+    loop 3
+    {
+      sleep, 100
+      if (isHotkeySendInitiated)
+      {
+        return
+      }
+    }
+    
+    loop
+    {
+      sleep, 30
+      if (!getkeystate(hotkeyVar, "P"))
+      {
+        break
+      }
+      send % fullHotkeyCombination
+    }
+
+    isFunctionRunning := true
+  }
+
+
 }
 
 putShiftIfDown() {
