@@ -1,138 +1,251 @@
-#maxthreadsperhotkey, 2
-
-lctrl & ralt:: 
-  isAltGrDown := true
-  if (!j) {
-
-      j := "delete"
-    , u := "insert"
-    , i := "home"
-    , k := "end"
-    , o := "pgup"
-    , l := "pgdn"
-
-    , Ã¥ := "backspace"
-    , Ã¶ := "enter"
-
-    , s := "down"
-    , w := "up"
-    , a := "left"
-    , d := "right"
-
-    , c := "c"
-    , v := "v"
-    , x := "x"
-    , z := "z"
-    , y := "y"
-
-    , comment := "'"
-    , tab := "tab"
-    , space := "space"
-  }
+  #singleinstance, force
+  HotkeyNavigation.Activate()
+  ; HotkeyNavigation.Deactivate()
 return
 
-lctrl & ralt up:: isAltGrDown := false
+class HotkeyNavigation
+{
+  #maxthreadsperhotkey, 1
 
-#if isAltGrDown
+  #if HotkeyNavigation.hotkeys.isAltGrDown
+  #if
 
-lalt::return
-*':: sendHotkey("comment")
-*j::
-*u::
-*i::
-*k::
-*o::
-*l::
-*Ã¶::
-*Ã¥::
-*s::
-*w::
-*a::
-*d::
-*c::
-*x::
-*v::
-*z::
-*y::
-*tab::
-*space::
-  uniqueHotkeyId := substr(a_thishotkey, 2) a_now
-  sendHotkey(substr(a_thishotkey, 2))
-return
+  static hotkeys := {
+  (Join
+    activation: {
+      on: "lctrl & ralt",
+      off: "lctrl & ralt up"
+    },
+    disable: [
+      "lalt"
+    ],
+    navigation: {
+      unraw: {
+        j: "delete",
+        u: "insert",
+        i: "home",
+        k: "end",
+        o: "pgup",
+        l: "pgdn",
 
-7::{
-0::}
-8::[
-9::]
-+::\
-2::@
-3::Â£
-4::$
-e::â‚¬
-<::|
-*Â¨:: send, {lctrl down}{ralt down}Â¨{ralt up}{lctrl up}
+        å: "backspace",
+        ö: "enter",
 
-#maxthreadsperhotkey, 1
-#if
+        s: "down",
+        w: "up",
+        a: "left",
+        d: "right",
 
-sendHotkey(hotkeyVar) {
-  local sendCompatibleHotkey, fullHotkeyCombination
+        c: "c",
+        v: "v",
+        x: "x",
+        z: "z",
+        y: "y",
+        t: "t",
+        f: "f",
 
-  static isFunctionRunning = false, isHotkeySendInitiated = false
-
-  isHotkeySendInitiated := true
-  if (strlen(%hotkeyVar%) > 1) {
-    sendCompatibleHotkey := "{" %hotkeyVar% "}"
-  } else {
-    sendCompatibleHotkey := %hotkeyVar%
-  }
-
-  fullHotkeyCombination := ""
-    . putCtrlIfReplacementDown()
-    . putAltIfReplacementDown()
-    . putShiftIfDown()
-    . sendCompatibleHotkey
-  
-  isHotkeySendInitiated := false
-  send % fullHotkeyCombination
-  
-  if (!isFunctionRunning)
-  {
-    isFunctionRunning := true
-    
-    loop 3
-    {
-      sleep, 100
-      if (isHotkeySendInitiated)
-      {
-        return
+        "'": "'",
+        tab: "tab",
+        space: "space"
+      },
+      raw: {
+        7: "{",
+        0: "}",
+        8: "[",
+        9: "]",
+        "+": "\",
+        2: "@",
+        3: "£",
+        4: "$",
+        e: "€",
+        "<": "|",
+        "¨": "~"
       }
+    },
+    timing: {
+      repeatDelayMs: 350,
+      repeatRateMs: 0
+    },
+    isAltGrDown: false
+  )}
+  
+  static isNavigationActive := false
+
+
+  Activate() {
+    if (!HotkeyNavigation.isNavigationActive)
+    {
+      ; Setup AltGr detection hotkeys
+      altGrFunc := HotkeyNavigation.AltGrSwitch.bind(this)
+      hotkey, % HotkeyNavigation.hotkeys.activation.on, % altGrFunc
+      hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
+
+      ; Setup replacement navigation hotkeys
+      hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown
+
+      for hotkeyType, hotkeys in HotkeyNavigation.hotkeys.navigation
+      {
+        isRawVirtualKey := hotkeyType == "raw"
+
+        for sourceHotkey, targetHotkey in hotkeys
+        {
+          hotkeyExecuteFunc := HotkeyNavigation
+                                .ExecuteNavigationHotkey
+                                .bind(this, sourceHotkey, targetHotkey, isRawVirtualKey)
+          hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey, % hotkeyExecuteFunc
+        }
+      }
+
+      for index, keyname in HotkeyNavigation.hotkeys.disable
+      {
+        hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.bind(this)
+        hotkey, % keyname, % hotkeyExecuteFunc
+      } 
+
+      hotkey, if
+
+      HotkeyNavigation.isNavigationActive := true
     }
-    
+  }
+
+  IgnoreKey(realKey) {
+    return
+  }
+
+  ExecuteNavigationHotkey(keyPressed, virtualKeyToSend, isRawVirtualKey) {
+    this.hotkey.previouslyExecuted := keyPressed
+
+    sendCompatibleHotkey := strlen(virtualKeyToSend) > 1 && !isRawVirtualKey
+                              ? "{" virtualKeyToSend "}" : virtualKeyToSend
+
+    prefixPressDownCombination := ""
+      . HotkeyNavigation.PrefixKeys.GetCtrlDownIfReplacementDown()
+      . HotkeyNavigation.PrefixKeys.GetAltDownIfReplacementDown()
+      . HotkeyNavigation.PrefixKeys.GetShiftDownIfReplacementDown()
+
+    prefixReleaseUpCombination := ""
+      . HotkeyNavigation.PrefixKeys.GetCtrlUpIfReplacementDown()
+      . HotkeyNavigation.PrefixKeys.GetAltUpIfReplacementDown()
+      . HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown()
+
     loop
     {
-      sleep, 30
-      if (!getkeystate(hotkeyVar, "P"))
+      if (!getkeystate(keyPressed, "p"))
       {
         break
       }
-      send % fullHotkeyCombination
+
+      if (strlen(prefixPressDownCombination) > 0)
+      {
+        if (isRawVirtualKey)
+        {
+          sendinput % "{Raw}" sendCompatibleHotkey
+        }
+        else
+        {
+          sendplay % prefixPressDownCombination sendCompatibleHotkey
+        }
+      }
+      else
+      {
+        if (isRawVirtualKey)
+        {
+          sendinput % "{Raw}" sendCompatibleHotkey
+        }
+        else
+        {
+          sendplay % sendCompatibleHotkey
+        }
+      }
+
+
+      if (a_index == 1)
+      {
+        iterationStartTime := a_tickcount
+
+        loop
+        {
+          elapsedIterationTime := a_tickcount - iterationStartTime
+
+          if (  !getkeystate(keyPressed, "p")
+              || elapsedIterationTime >= HotkeyNavigation.hotkeys.timing.repeatDelayMs)
+          {
+            break
+          }
+        }
+
+      }
+      else
+      {
+        iterationStartTime := a_tickcount
+
+        loop
+        {
+          elapsedIterationTime := a_tickcount - iterationStartTime
+
+          if (  !getkeystate(keyPressed, "p")
+              || elapsedIterationTime >= HotkeyNavigation.hotkeys.timing.repeatRateMs)
+          {
+            break
+          }
+        }
+      }
     }
 
-    isFunctionRunning := true
+    if (strlen(prefixReleaseUpCombination) > 0)
+    {
+      sendplay % "{blind}" prefixReleaseUpCombination
+    }
   }
 
+  AltGrSwitch() {
+    if (a_thishotkey == HotkeyNavigation.hotkeys.activation.on)
+    {
+      HotkeyNavigation.hotkeys.isAltGrDown := true
+    }
+    else if (a_thishotkey == HotkeyNavigation.hotkeys.activation.off)
+    {
+      HotkeyNavigation.hotkeys.isAltGrDown := false
+    }
+    else
+    {
+      throw Exception("Unrecognized AltGr switch hotkey: " a_thishotkey)
+    }
+  }
 
-}
+  Deactivate() {
+    if (HotkeyNavigation.isNavigationActive)
+    {
+      Hotkey, % HotkeyNavigation.hotkeys.activation.on, Off
+      Hotkey, % HotkeyNavigation.hotkeys.activation.off, Off
+      HotkeyNavigation.isNavigationActive := false
+    }
+  }
 
-putShiftIfDown() {
-  return getkeystate("shift") ? "+" : ""
-}
+  class PrefixKeys
+  {
+    GetShiftDownIfReplacementDown() {
+      return getkeystate("shift") ? "{shift down}" : ""
+    }
 
-putCtrlIfReplacementDown() {
-  return getkeystate("lalt", "P") ? "^" : ""
-}
+    GetCtrlDownIfReplacementDown() {
+      return getkeystate("lalt", "p") ? "{ctrl down}" : ""
+    }
 
-putAltIfReplacementDown() {
-  return getkeystate("lwin") ? "!" : ""
+    GetAltDownIfReplacementDown() {
+      return getkeystate("lwin") ? "{alt down}" : ""
+    }
+
+    GetShiftUpIfReplacementDown() {
+      return getkeystate("shift") ? "{shift up}" : ""
+    }
+
+    GetCtrlUpIfReplacementDown() {
+      return getkeystate("lalt") ? "{ctrl up}" : ""
+    }
+
+    GetAltUpIfReplacementDown() {
+      return getkeystate("lwin") ? "{alt up}" : ""
+    }
+  }
 }
