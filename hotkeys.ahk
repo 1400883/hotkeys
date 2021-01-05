@@ -118,18 +118,19 @@ class HotkeyNavigation
     sendCompatibleHotkey := strlen(virtualKeyToSend) > 1 && !isRawVirtualKey
                               ? "{" virtualKeyToSend "}" : virtualKeyToSend
 
-    prefixPressDownCombination := ""
-      . HotkeyNavigation.PrefixKeys.GetCtrlDownIfReplacementDown()
-      . HotkeyNavigation.PrefixKeys.GetAltDownIfReplacementDown()
-      . HotkeyNavigation.PrefixKeys.GetShiftDownIfReplacementDown()
-
-    prefixReleaseUpCombination := ""
-      . HotkeyNavigation.PrefixKeys.GetCtrlUpIfReplacementDown()
-      . HotkeyNavigation.PrefixKeys.GetAltUpIfReplacementDown()
-      . HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown()
 
     loop
     {
+      prefixPressDownCombination := ""
+        . HotkeyNavigation.PrefixKeys.GetCtrlDownIfReplacementDown()
+        . HotkeyNavigation.PrefixKeys.GetAltDownIfReplacementDown()
+        . HotkeyNavigation.PrefixKeys.GetShiftDownIfReplacementDown()
+
+      prefixReleaseUpCombination := ""
+        . HotkeyNavigation.PrefixKeys.GetCtrlUpIfReplacementDown()
+        . HotkeyNavigation.PrefixKeys.GetAltUpIfReplacementDown()
+        . HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown()
+      
       if (!getkeystate(keyPressed, "p"))
       {
         break
@@ -206,6 +207,7 @@ class HotkeyNavigation
     else if (a_thishotkey == HotkeyNavigation.hotkeys.activation.off)
     {
       HotkeyNavigation.hotkeys.isAltGrDown := false
+      send {blind}{ctrl up}{alt up}{shift up}
     }
     else
     {
