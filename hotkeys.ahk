@@ -1,7 +1,7 @@
-  #singleinstance, force
-  HotkeyNavigation.Activate()
+  ; #singleinstance, force
+  ; HotkeyNavigation.Activate()
   ; HotkeyNavigation.Deactivate()
-return
+; return
 
 class HotkeyNavigation
 {
@@ -130,7 +130,7 @@ class HotkeyNavigation
         . HotkeyNavigation.PrefixKeys.GetCtrlUpIfReplacementDown()
         . HotkeyNavigation.PrefixKeys.GetAltUpIfReplacementDown()
         . HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown()
-      
+
       if (!getkeystate(keyPressed, "p"))
       {
         break
@@ -207,7 +207,17 @@ class HotkeyNavigation
     else if (a_thishotkey == HotkeyNavigation.hotkeys.activation.off)
     {
       HotkeyNavigation.hotkeys.isAltGrDown := false
-      send {blind}{ctrl up}{alt up}{shift up}
+
+      releaseKeys := ""
+        . (getkeystate("ctrl", "p") ? "" : "{ctrl up}")
+        . (getkeystate("alt", "p") ? "" : "{alt up}")
+        . (getkeystate("shift", "p") ? "" : "{shift up}")
+
+      if (strlen(releaseKeys))
+      {
+        tooltip % releaseKeys
+        send % "{blind}" releaseKeys
+      }
     }
     else
     {
