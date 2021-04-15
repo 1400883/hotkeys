@@ -8,6 +8,7 @@ class HotkeyNavigation
   #maxthreadsperhotkey, 1
 
   #if HotkeyNavigation.hotkeys.isAltGrDown
+  #if !HotkeyNavigation.hotkeys.isAltGrDown
   #if
 
   static hotkeys := {
@@ -77,11 +78,14 @@ class HotkeyNavigation
     {
       ; Setup AltGr detection hotkeys
       altGrFunc := HotkeyNavigation.AltGrSwitch.bind(this)
+      
+
+      hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown
       hotkey, % HotkeyNavigation.hotkeys.activation.on, % altGrFunc
-      hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
 
       ; Setup replacement navigation hotkeys
       hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown
+      hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
 
       for hotkeyType, hotkeys in HotkeyNavigation.hotkeys.navigation
       {
@@ -200,14 +204,13 @@ class HotkeyNavigation
   }
 
   AltGrSwitch() {
+    HotkeyNavigation.hotkeys.isAltGrDown := !HotkeyNavigation.hotkeys.isAltGrDown
+
     if (a_thishotkey == HotkeyNavigation.hotkeys.activation.on)
     {
-      HotkeyNavigation.hotkeys.isAltGrDown := true
     }
     else if (a_thishotkey == HotkeyNavigation.hotkeys.activation.off)
     {
-      HotkeyNavigation.hotkeys.isAltGrDown := false
-
       releaseKeys := ""
         . (getkeystate("ctrl", "p") ? "" : "{ctrl up}")
         . (getkeystate("alt", "p") ? "" : "{alt up}")
@@ -215,7 +218,6 @@ class HotkeyNavigation
 
       if (strlen(releaseKeys))
       {
-        tooltip % releaseKeys
         send % "{blind}" releaseKeys
       }
     }
