@@ -1,4 +1,4 @@
-  ; #singleinstance, force
+ï»¿  ; #singleinstance, force
   ; HotkeyNavigation.Activate()
   ; HotkeyNavigation.Deactivate()
 ; return
@@ -7,8 +7,9 @@ class HotkeyNavigation
 {
   #maxthreadsperhotkey, 1
 
-  #if HotkeyNavigation.hotkeys.isAltGrDown
-  #if !HotkeyNavigation.hotkeys.isAltGrDown
+  #if !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
+  #if
+  #if HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
   #if
 
   static hotkeys := {
@@ -29,8 +30,8 @@ class HotkeyNavigation
         o: "pgup",
         l: "pgdn",
 
-        å: "backspace",
-        ö: "enter",
+        Ã¥: "backspace",
+        Ã¶: "enter",
 
         s: "down",
         w: "up",
@@ -56,11 +57,11 @@ class HotkeyNavigation
         9: "]",
         "+": "\",
         2: "@",
-        3: "£",
+        3: "Â£",
         4: "$",
-        e: "€",
+        e: "â‚¬",
         "<": "|",
-        "¨": "~"
+        "Â¨": "~"
       }
     },
     timing: {
@@ -73,18 +74,21 @@ class HotkeyNavigation
   static isNavigationActive := false
 
 
-  Activate() {
+  Activate(repeatRateMs := 20, repeatDelayMs := 350) {
+    this.hotkeys.timing.repeatDelayMs := repeatDelayMs
+    this.hotkeys.timing.repeatRateMs := repeatRateMs
+
     if (!HotkeyNavigation.isNavigationActive)
     {
       ; Setup AltGr detection hotkeys
       altGrFunc := HotkeyNavigation.AltGrSwitch.bind(this)
       
 
-      hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown
-      hotkey, % HotkeyNavigation.hotkeys.activation.on, % altGrFunc
-
       ; Setup replacement navigation hotkeys
-      hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown
+      hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
+      hotkey, % HotkeyNavigation.hotkeys.activation.on, % altGrFunc
+      hotkey, if
+      hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
       hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
 
       for hotkeyType, hotkeys in HotkeyNavigation.hotkeys.navigation
@@ -219,6 +223,11 @@ class HotkeyNavigation
       if (strlen(releaseKeys))
       {
         send % "{blind}" releaseKeys
+
+        if (getkeystate("ctrl"))
+        {
+          send % "{blind}{ctrl up}"
+        }
       }
     }
     else
