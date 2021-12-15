@@ -224,6 +224,8 @@ class HotkeyNavigation
       {
         send % "{blind}" releaseKeys
 
+        ; NOTE: This code MUST be here to make AHK running in VirtualBox
+        ; successfully release the ctrl key.
         if (getkeystate("ctrl"))
         {
           send % "{blind}{ctrl up}"
