@@ -106,7 +106,7 @@ class HotkeyNavigation
 
       for index, keyname in HotkeyNavigation.hotkeys.disable
       {
-        hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.bind(this)
+        hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.bind(this, keyname)
         hotkey, % keyname, % hotkeyExecuteFunc
       } 
 
