@@ -86,30 +86,35 @@ class HotkeyNavigation
 
       ; Setup replacement navigation hotkeys
       hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
-      hotkey, % HotkeyNavigation.hotkeys.activation.on, % altGrFunc
+      ; ---------------------------------------------------------------------------------
+        hotkey, % HotkeyNavigation.hotkeys.activation.on, % altGrFunc
+      ; ---------------------------------------------------------------------------------
       hotkey, if
+
+
       hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
-      hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
+      ; ---------------------------------------------------------------------------------
+        hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
 
-      for hotkeyType, hotkeys in HotkeyNavigation.hotkeys.navigation
-      {
-        isRawVirtualKey := hotkeyType == "raw"
-
-        for sourceHotkey, targetHotkey in hotkeys
+        for hotkeyType, hotkeys in HotkeyNavigation.hotkeys.navigation
         {
-          hotkeyExecuteFunc := HotkeyNavigation
-                                .ExecuteNavigationHotkey
-                                .bind(this, sourceHotkey, targetHotkey, isRawVirtualKey)
-          hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey, % hotkeyExecuteFunc
+          isRawVirtualKey := hotkeyType == "raw"
+
+          for sourceHotkey, targetHotkey in hotkeys
+          {
+            hotkeyExecuteFunc := HotkeyNavigation
+                                  .ExecuteNavigationHotkey
+                                  .bind(this, sourceHotkey, targetHotkey, isRawVirtualKey)
+            hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey, % hotkeyExecuteFunc
+          }
         }
-      }
 
-      for index, keyname in HotkeyNavigation.hotkeys.disable
-      {
-        hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.bind(this, keyname)
-        hotkey, % keyname, % hotkeyExecuteFunc
-      } 
-
+        for index, keyname in HotkeyNavigation.hotkeys.disable
+        {
+          hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.bind(this, keyname)
+          hotkey, % keyname, % hotkeyExecuteFunc
+        }
+      ; ---------------------------------------------------------------------------------
       hotkey, if
 
       HotkeyNavigation.isNavigationActive := true
@@ -216,7 +221,7 @@ class HotkeyNavigation
     else if (a_thishotkey == HotkeyNavigation.hotkeys.activation.off)
     {
       releaseKeys := ""
-        . (getkeystate("ctrl", "p") ? "" : "{ctrl up}")
+        . (getkeystate("lctrl", "p") ? "" : "{ctrl up}")
         . (getkeystate("alt", "p") ? "" : "{alt up}")
         . (getkeystate("shift", "p") ? "" : "{shift up}")
 
@@ -228,7 +233,7 @@ class HotkeyNavigation
         ; successfully release the ctrl key.
         if (getkeystate("ctrl"))
         {
-          send % "{blind}{ctrl up}"
+          ; send % "{blind}{ctrl up}"
         }
       }
     }
