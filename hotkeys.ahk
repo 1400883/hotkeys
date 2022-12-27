@@ -83,7 +83,7 @@ class HotkeyNavigation
       ; Setup AltGr detection hotkeys
       altGrFunc := HotkeyNavigation.AltGrSwitch.bind(this)
       
-
+      #inputlevel, 1
       ; Setup replacement navigation hotkeys
       hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
       ; ---------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ class HotkeyNavigation
         }
       ; ---------------------------------------------------------------------------------
       hotkey, if
-
+      #inputlevel
       HotkeyNavigation.isNavigationActive := true
     }
   }
@@ -126,6 +126,8 @@ class HotkeyNavigation
   }
 
   ExecuteNavigationHotkey(keyPressed, virtualKeyToSend, isRawVirtualKey) {
+    critical
+    
     this.hotkey.previouslyExecuted := keyPressed
 
     sendCompatibleHotkey := strlen(virtualKeyToSend) > 1 && !isRawVirtualKey
