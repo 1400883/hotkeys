@@ -8,15 +8,14 @@ class HotkeyNavigation
   #maxthreadsperhotkey, 1
 
   #if !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
-  #if
   #if HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
   #if
 
   static hotkeys := {
   (Join
     activation: {
-      on: "lctrl & ralt",
-      off: "lctrl & ralt up"
+      on: "~lctrl & ralt",
+      off: "~lctrl & ralt up"
     },
     disable: [
       "lalt"
@@ -37,6 +36,8 @@ class HotkeyNavigation
         w: "up",
         a: "left",
         d: "right",
+
+        q: "esc",
 
         c: "c",
         v: "v",
@@ -81,9 +82,8 @@ class HotkeyNavigation
     if (!HotkeyNavigation.isNavigationActive)
     {
       ; Setup AltGr detection hotkeys
-      altGrFunc := HotkeyNavigation.AltGrSwitch.bind(this)
+      altGrFunc := HotkeyNavigation.AltGrSwitch.Bind(this)
       
-      #inputlevel, 1
       ; Setup replacement navigation hotkeys
       hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
       ; ---------------------------------------------------------------------------------
@@ -94,31 +94,51 @@ class HotkeyNavigation
 
       hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
       ; ---------------------------------------------------------------------------------
-        hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc
-
+        hotkey, % HotkeyNavigation.hotkeys.activation.off, % altGrFunc, P101
+        
         for hotkeyType, hotkeys in HotkeyNavigation.hotkeys.navigation
         {
           isRawVirtualKey := hotkeyType == "raw"
 
           for sourceHotkey, targetHotkey in hotkeys
           {
-            hotkeyExecuteFunc := HotkeyNavigation
-                                  .ExecuteNavigationHotkey
-                                  .bind(this, sourceHotkey, targetHotkey, isRawVirtualKey)
-            hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey, % hotkeyExecuteFunc
+            hotkeyExecuteFunc := HotkeyNavigation.ExecuteNavigationHotkey
+                .Bind(this, sourceHotkey, targetHotkey, isRawVirtualKey)
+
+            hotkeyTestFunc := HotkeyNavigation.ShouldNavigate.Bind(this)
+            hotkey, if, % hotkeyTestFunc
+            hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey, % hotkeyExecuteFunc, P100
           }
         }
 
+        hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
+
         for index, keyname in HotkeyNavigation.hotkeys.disable
         {
-          hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.bind(this, keyname)
+          hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.Bind(this, keyname)
           hotkey, % keyname, % hotkeyExecuteFunc
         }
-      ; ---------------------------------------------------------------------------------
       hotkey, if
-      #inputlevel
+      ; ---------------------------------------------------------------------------------
       HotkeyNavigation.isNavigationActive := true
     }
+  }
+
+  Deactivate() {
+    if (HotkeyNavigation.isNavigationActive)
+    {
+      hotkey, if, !HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
+      Hotkey, % HotkeyNavigation.hotkeys.activation.on, Off
+      hotkey, if, HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe")
+      Hotkey, % HotkeyNavigation.hotkeys.activation.off, Off
+      hotkey, if
+
+      HotkeyNavigation.isNavigationActive := false
+    }
+  }
+
+  ShouldNavigate(fullHotkey) {
+    return HotkeyNavigation.hotkeys.isAltGrDown && !winactive("ahk_exe VirtualBoxVM.exe") 
   }
 
   IgnoreKey(realKey) {
@@ -126,8 +146,11 @@ class HotkeyNavigation
   }
 
   ExecuteNavigationHotkey(keyPressed, virtualKeyToSend, isRawVirtualKey) {
-    critical
-    
+    if (!getkeystate(keyPressed, "p") || !HotkeyNavigation.hotkeys.isAltGrDown)
+    {
+      return
+    }
+
     this.hotkey.previouslyExecuted := keyPressed
 
     sendCompatibleHotkey := strlen(virtualKeyToSend) > 1 && !isRawVirtualKey
@@ -146,7 +169,7 @@ class HotkeyNavigation
         . HotkeyNavigation.PrefixKeys.GetAltUpIfReplacementDown()
         . HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown()
 
-      if (!getkeystate(keyPressed, "p"))
+      if (!getkeystate(keyPressed, "p") || !HotkeyNavigation.hotkeys.isAltGrDown)
       {
         break
       }
@@ -208,6 +231,7 @@ class HotkeyNavigation
       }
     }
 
+    ; tooltip % "Hotkey released", 20, 20, 2
     if (strlen(prefixReleaseUpCombination) > 0)
     {
       sendplay % "{blind}" prefixReleaseUpCombination
@@ -215,6 +239,8 @@ class HotkeyNavigation
   }
 
   AltGrSwitch() {
+    critical, on
+
     HotkeyNavigation.hotkeys.isAltGrDown := !HotkeyNavigation.hotkeys.isAltGrDown
 
     if (a_thishotkey == HotkeyNavigation.hotkeys.activation.on)
@@ -242,15 +268,6 @@ class HotkeyNavigation
     else
     {
       throw Exception("Unrecognized AltGr switch hotkey: " a_thishotkey)
-    }
-  }
-
-  Deactivate() {
-    if (HotkeyNavigation.isNavigationActive)
-    {
-      Hotkey, % HotkeyNavigation.hotkeys.activation.on, Off
-      Hotkey, % HotkeyNavigation.hotkeys.activation.off, Off
-      HotkeyNavigation.isNavigationActive := false
     }
   }
 
