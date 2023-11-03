@@ -79,6 +79,8 @@ class HotkeyNavigation
     this.hotkeys.timing.repeatDelayMs := repeatDelayMs
     this.hotkeys.timing.repeatRateMs := repeatRateMs
 
+    sendinput % "{blind}{lalt up}"
+    
     if (!HotkeyNavigation.isNavigationActive)
     {
       ; Setup AltGr detection hotkeys
@@ -156,7 +158,6 @@ class HotkeyNavigation
     sendCompatibleHotkey := strlen(virtualKeyToSend) > 1 && !isRawVirtualKey
                               ? "{" virtualKeyToSend "}" : virtualKeyToSend
 
-
     loop
     {
       prefixPressDownCombination := ""
@@ -182,7 +183,8 @@ class HotkeyNavigation
         }
         else
         {
-          sendplay % prefixPressDownCombination sendCompatibleHotkey
+          sendinput % prefixPressDownCombination sendCompatibleHotkey prefixReleaseUpCombination
+          ; sendinput % prefixPressDownCombination sendCompatibleHotkey prefixReleaseUpCombination
         }
       }
       else
@@ -193,7 +195,7 @@ class HotkeyNavigation
         }
         else
         {
-          sendplay % sendCompatibleHotkey
+          sendinput % sendCompatibleHotkey
         }
       }
 
@@ -212,7 +214,6 @@ class HotkeyNavigation
             break
           }
         }
-
       }
       else
       {
@@ -234,13 +235,21 @@ class HotkeyNavigation
     ; tooltip % "Hotkey released", 20, 20, 2
     if (strlen(prefixReleaseUpCombination) > 0)
     {
-      sendplay % "{blind}" prefixReleaseUpCombination
+      if ( !HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown() 
+        && !HotkeyNavigation.PrefixKeys.GetAltUpIfReplacementDown())
+      {
+        ; Only release keys if Shift and LWin are not pressed.
+        ; Otherwise, Shift and/or LWin will be released even 
+        ; though being held down, typically causing an active 
+        ; text (Shift) or multi-cursor (LWin) selection 
+        ; operation to end prematurely.
+        sendinput % "{blind}" prefixReleaseUpCombination
+      }
     }
   }
 
   AltGrSwitch() {
     critical, on
-
     HotkeyNavigation.hotkeys.isAltGrDown := !HotkeyNavigation.hotkeys.isAltGrDown
 
     if (a_thishotkey == HotkeyNavigation.hotkeys.activation.on)
@@ -249,13 +258,13 @@ class HotkeyNavigation
     else if (a_thishotkey == HotkeyNavigation.hotkeys.activation.off)
     {
       releaseKeys := ""
-        . (getkeystate("lctrl", "p") ? "" : "{ctrl up}")
+        . (getkeystate("lctrl", "p") ? "" : "{lctrl up}")
         . (getkeystate("alt", "p") ? "" : "{alt up}")
         . (getkeystate("shift", "p") ? "" : "{shift up}")
-
+      ; msgbox % releaseKeys
       if (strlen(releaseKeys))
       {
-        send % "{blind}" releaseKeys
+        sendinput % "{blind}" releaseKeys 
 
         ; NOTE: This code MUST be here to make AHK running in VirtualBox
         ; successfully release the ctrl key.
@@ -282,7 +291,7 @@ class HotkeyNavigation
     }
 
     GetAltDownIfReplacementDown() {
-      return getkeystate("lwin") ? "{alt down}" : ""
+      return getkeystate("lwin", "p") ? "{alt down}" : ""
     }
 
     GetShiftUpIfReplacementDown() {
@@ -290,11 +299,11 @@ class HotkeyNavigation
     }
 
     GetCtrlUpIfReplacementDown() {
-      return getkeystate("lalt") ? "{ctrl up}" : ""
+      return getkeystate("lalt", "p") ? "{ctrl up}" : ""
     }
 
     GetAltUpIfReplacementDown() {
-      return getkeystate("lwin") ? "{alt up}" : ""
+      return getkeystate("lwin", "p") ? "{alt up}" : ""
     }
   }
 }
