@@ -79,7 +79,7 @@ class HotkeyNavigation
     this.hotkeys.timing.repeatDelayMs := repeatDelayMs
     this.hotkeys.timing.repeatRateMs := repeatRateMs
 
-    sendinput % "{blind}{lalt up}"
+    sendevent % "{blind}{lalt up}"
     
     if (!HotkeyNavigation.isNavigationActive)
     {
@@ -120,7 +120,9 @@ class HotkeyNavigation
           hotkeyExecuteFunc := HotkeyNavigation.IgnoreKey.Bind(this, keyname)
           hotkey, % keyname, % hotkeyExecuteFunc
         }
+
       hotkey, if
+
       ; ---------------------------------------------------------------------------------
       HotkeyNavigation.isNavigationActive := true
     }
@@ -172,30 +174,43 @@ class HotkeyNavigation
 
       if (!getkeystate(keyPressed, "p") || !HotkeyNavigation.hotkeys.isAltGrDown)
       {
+        if (delayedRelease.isRequired)
+        {
+          sendevent % "{blind}" delayedRelease.keys
+        }
         break
+
       }
 
       if (strlen(prefixPressDownCombination) > 0)
       {
         if (isRawVirtualKey)
         {
-          sendinput % "{Raw}" sendCompatibleHotkey
+          sendevent % "{Raw}" sendCompatibleHotkey
         }
         else
         {
-          sendinput % prefixPressDownCombination sendCompatibleHotkey prefixReleaseUpCombination
-          ; sendinput % prefixPressDownCombination sendCompatibleHotkey prefixReleaseUpCombination
+          ; Due to having to (again) revert from one sendmode to another (this time, SendInput 
+          ; -> SendEvent) sending the prefix release combination each time in the loop does not 
+          ; cut it when using SendEvent: when trying to do so, the prefix press down combination 
+          ; won't reliably register every time, causing for example the shift key to be 
+          ; occasionally dropped during an expanding text selection, breaking selection pattern. 
+          ; To avoid this, send just the prefix down combination and the actual key in the loop
+          ; and the prefix release combination only after breaking out of the loop. This is 
+          ; supposedly how it should've been since the beginning.
+          delayedRelease := { isRequired: true, keys: prefixReleaseUpCombination }
+          sendevent % prefixPressDownCombination sendCompatibleHotkey
         }
       }
       else
       {
         if (isRawVirtualKey)
         {
-          sendinput % "{Raw}" sendCompatibleHotkey
+          sendevent % "{Raw}" sendCompatibleHotkey
         }
         else
         {
-          sendinput % sendCompatibleHotkey
+          sendevent % sendCompatibleHotkey
         }
       }
 
@@ -243,7 +258,7 @@ class HotkeyNavigation
         ; though being held down, typically causing an active 
         ; text (Shift) or multi-cursor (LWin) selection 
         ; operation to end prematurely.
-        sendinput % "{blind}" prefixReleaseUpCombination
+        sendevent % "{blind}" prefixReleaseUpCombination
       }
     }
   }
@@ -261,10 +276,10 @@ class HotkeyNavigation
         . (getkeystate("lctrl", "p") ? "" : "{lctrl up}")
         . (getkeystate("alt", "p") ? "" : "{alt up}")
         . (getkeystate("shift", "p") ? "" : "{shift up}")
-      ; msgbox % releaseKeys
+      
       if (strlen(releaseKeys))
       {
-        sendinput % "{blind}" releaseKeys 
+        sendevent % "{blind}" releaseKeys
 
         ; NOTE: This code MUST be here to make AHK running in VirtualBox
         ; successfully release the ctrl key.
@@ -283,7 +298,7 @@ class HotkeyNavigation
   class PrefixKeys
   {
     GetShiftDownIfReplacementDown() {
-      return getkeystate("shift") ? "{shift down}" : ""
+      return getkeystate("shift", "p") ? "{shift down}" : ""
     }
 
     GetCtrlDownIfReplacementDown() {
@@ -295,7 +310,7 @@ class HotkeyNavigation
     }
 
     GetShiftUpIfReplacementDown() {
-      return getkeystate("shift") ? "{shift up}" : ""
+      return getkeystate("shift", "p") ? "{shift up}" : ""
     }
 
     GetCtrlUpIfReplacementDown() {
