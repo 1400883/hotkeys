@@ -186,7 +186,7 @@ class HotkeyNavigation
       {
         if (isRawVirtualKey)
         {
-          sendevent % "{Raw}" sendCompatibleHotkey
+          sendevent % "{Text}" sendCompatibleHotkey
         }
         else
         {
@@ -206,7 +206,7 @@ class HotkeyNavigation
       {
         if (isRawVirtualKey)
         {
-          sendevent % "{Raw}" sendCompatibleHotkey
+          sendevent % "{Text}" sendCompatibleHotkey
         }
         else
         {
