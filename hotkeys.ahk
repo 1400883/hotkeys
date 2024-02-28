@@ -20,6 +20,7 @@ class HotkeyNavigation
     disable: [
       "lalt"
     ],
+    priority: 100,
     navigation: {
       unraw: {
         j: "delete",
@@ -109,7 +110,11 @@ class HotkeyNavigation
 
             hotkeyTestFunc := HotkeyNavigation.ShouldNavigate.Bind(this)
             hotkey, if, % hotkeyTestFunc
-            hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey, % hotkeyExecuteFunc, P100
+
+            ; Set a non-zero positive SendLevel/InputLevel to 
+            ; allow other code to respond to the converted key
+            hotkey, % (isRawVirtualKey ? "" : "*") sourceHotkey
+                , % hotkeyExecuteFunc, % "I1 P" HotkeyNavigation.hotkeys.priority
           }
         }
 
@@ -154,8 +159,6 @@ class HotkeyNavigation
     {
       return
     }
-
-    this.hotkey.previouslyExecuted := keyPressed
 
     sendCompatibleHotkey := strlen(virtualKeyToSend) > 1 && !isRawVirtualKey
                               ? "{" virtualKeyToSend "}" : virtualKeyToSend
@@ -247,7 +250,6 @@ class HotkeyNavigation
       }
     }
 
-    ; tooltip % "Hotkey released", 20, 20, 2
     if (strlen(prefixReleaseUpCombination) > 0)
     {
       if ( !HotkeyNavigation.PrefixKeys.GetShiftUpIfReplacementDown() 
@@ -261,6 +263,7 @@ class HotkeyNavigation
         sendevent % "{blind}" prefixReleaseUpCombination
       }
     }
+
   }
 
   AltGrSwitch() {
